@@ -7,7 +7,7 @@ import React, {createElement} from 'react';
 import {Spin} from 'antd';
 import pathToRegexp from 'path-to-regexp';
 import Loadable from 'react-loadable';
-import {getMenuData} from "./menu";
+import {getMenuData} from './menu';
 
 let routerDataCache;
 
@@ -65,10 +65,10 @@ function getFlatMenuData(menus) {
     let keys = {};
     menus.forEach(item => {
         if (item.children) {
-            keys[item.path] = { ...item };
-            keys = { ...keys, ...getFlatMenuData(item.children) };
+            keys[item.path] = {...item};
+            keys = {...keys, ...getFlatMenuData(item.children)};
         } else {
-            keys[item.path] = { ...item };
+            keys[item.path] = {...item};
         }
     });
     return keys;
@@ -92,12 +92,29 @@ function findMenuKey(menuData, path) {
     return menuKey;
 }
 
-
 export const getRouterData = app => {
     //!!!! router set data  ....config  add router !!!!
     const routerConfig = {
         '/': {
-            component: dynamicWrapper(app, ['user', 'login'], () => import('../layouts/BasicLayout')),
+            component: dynamicWrapper(app, ['user'], () => import('../layouts/BasicLayout')),
+        },
+        '/facility/assets': {
+            component: dynamicWrapper(app, ['assets'], () => import('../routes/Facility/Assets')),
+        },
+        '/facility/spare': {
+            component: dynamicWrapper(app, ['spare'], () => import('../routes/Facility/Spare')),
+        },
+        '/user': {
+            component: dynamicWrapper(app, [], () => import('../layouts/UserLayout')),
+        },
+        '/user/login': {
+            component: dynamicWrapper(app, ['login'], () => import('../routes/User/Login')),
+        },
+        '/user/register': {
+            component: dynamicWrapper(app, ['register'], () => import('../routes/User/Register')),
+        },
+        '/user/register-result': {
+            component: dynamicWrapper(app, [], () => import('../routes/User/RegisterResult')),
         },
     };
 
@@ -128,3 +145,4 @@ export const getRouterData = app => {
     });
     return routerData;
 };
+

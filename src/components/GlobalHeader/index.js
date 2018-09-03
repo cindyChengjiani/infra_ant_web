@@ -11,6 +11,7 @@ import groupBy from 'lodash/groupBy';
 import Debounce from 'lodash-decorators/debounce';
 import styles from './index.less';
 import {Link} from "react-router-dom";
+import NoticeIcon from '../NoticeIcon';
 import HeaderSearch from "../HeaderSearch";
 
 export default class GlobalHeader extends PureComponent {
@@ -81,7 +82,32 @@ export default class GlobalHeader extends PureComponent {
                             console.log('enter', value);
                         }}
                     />
-
+                    <NoticeIcon
+                        className={styles.action}
+                        onItemClick={(item, tabProps) => {
+                            console.log(item, tabProps);
+                        }}
+                        onClear={onNoticeClear}
+                        onPopupVisibleChange={onNoticeVisibleChange}
+                        loading={fetchingNotices}
+                        popupAlign={{ offset: [20, -16] }}
+                    >
+                        <NoticeIcon.Tab
+                            title="通知"
+                            emptyText="你已查看所有通知"
+                            emptyImage="https://gw.alipayobjects.com/zos/rmsportal/wAhyIChODzsoKIOBHcBk.svg"
+                        />
+                        <NoticeIcon.Tab
+                            title="消息"
+                            emptyText="您已读完所有消息"
+                            emptyImage="https://gw.alipayobjects.com/zos/rmsportal/sAuJeJzSKbUmHfBQRzmZ.svg"
+                        />
+                        <NoticeIcon.Tab
+                            title="待办"
+                            emptyText="你已完成所有待办"
+                            emptyImage="https://gw.alipayobjects.com/zos/rmsportal/HsIsxMZiWKrNUavQUXqx.svg"
+                        />
+                    </NoticeIcon>
                     {currentUser.name ? (
                         <Dropdown overlay={menu}>
                           <span className={`${styles.action} ${styles.account}`}>

@@ -10,7 +10,7 @@ const menuData = [
     {
         name: '资产备品备件管理',
         icon: 'dashboard',
-        path: 'facility-management',
+        path: 'facility',
         children: [
             {
                 name: '设备资产',
@@ -22,7 +22,26 @@ const menuData = [
             }
         ],
     },
-
+    {
+        name: '账户',
+        icon: 'user',
+        path: 'user',
+        authority: 'guest',
+        children: [
+            {
+                name: '登录',
+                path: 'login',
+            },
+            {
+                name: '注册',
+                path: 'register',
+            },
+            {
+                name: '注册结果',
+                path: 'register-result',
+            },
+        ],
+    },
 ];
 
 function formatter(data, parentPath = '/', parentAuthority) {
@@ -39,6 +58,7 @@ function formatter(data, parentPath = '/', parentAuthority) {
         if (item.children) {
             result.children = formatter(item.children, `${parentPath}${item.path}/`, item.authority);
         }
+
         return result;
     });
 }

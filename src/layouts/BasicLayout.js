@@ -11,14 +11,19 @@ import {connect} from 'dva';
 import {Route, Redirect, Switch, routerRedux} from 'dva/router';
 import {ContainerQuery} from "react-container-query";
 import GlobalHeader from '../components/GlobalHeader';
-import SiderMenu from '../components/SiderMenu/SiderMenu';
+import SiderMenu from '../components/SiderMenu';
 import classNames from 'classnames';
 import logo from '../logo.svg';
 import {getMenuData} from "../common/menu";
 import pathToRegexp from "path-to-regexp";
-import {enquireScreen} from "enquire-js";
+import {enquireScreen, unenquireScreen} from "enquire-js";
+import {getRoutes} from '../utils/utils';
+import Authorized from '../utils/Authorized';
+
 
 const {Content, Header} = Layout;
+const {AuthorizedRoute, check} = Authorized;
+
 const query = {
     'screen-xs': {
         maxWidth: 575,
@@ -43,16 +48,64 @@ const query = {
         minWidth: 1600,
     },
 };
-let isMobile;
-enquireScreen(b => {
-    isMobile = b;
-});
 
-@connect(({ user, global = {}, loading }) => ({
+/**
+ * 根据菜单取得重定向地址.
+ */
+const redirectData = [];
+const getRedirect = item => {
+    if (item && item.children) {
+        if (item.children[0] && item.children[0].path) {
+            redirectData.push({
+                from: `${item.path}`,
+                to: `${item.children[0].path}`,
+            });
+            item.children.forEach(children => {
+                getRedirect(children);
+            });
+        }
+    }
+};
+getMenuData().forEach(getRedirect);
+
+/**
+ * 获取面包屑映射
+ * @param {Object} menuData 菜单配置
+ * @param {Object} routerData 路由配置
+ */
+const getBreadcrumbNameMap = (menuData, routerData) => {
+    const result = {};
+    const childResult = {};
+    for (const i of menuData) {
+        if (!routerData[i.path]) {
+            result[i.path] = i;
+        }
+        if (i.children) {
+            Object.assign(childResult, getBreadcrumbNameMap(i.children, routerData));
+        }
+    }
+    return Object.assign({}, routerData, result, childResult);
+};
+
+@connect(({user, global = {}, loading}) => ({
     collapsed: global.collapsed
 }))
 
 export default class BasicLayout extends PureComponent {
+    static childContextTypes = {
+        location: PropTypes.object,
+        breadcrumbNameMap: PropTypes.object,
+    };
+
+
+    getChildContext() {
+        const {location, routerData} = this.props;
+        return {
+            location,
+            breadcrumbNameMap: getBreadcrumbNameMap(getMenuData(), routerData),
+        };
+    }
+
     getPageTitle() {
         const {routerData, location} = this.props;
         const {pathname} = location;
@@ -70,9 +123,23 @@ export default class BasicLayout extends PureComponent {
         return title;
     }
 
-    state = {
-        isMobile,
+    getBaseRedirect = () => {
+        const urlParams = new URL(window.location.href);
+
+        const redirect = urlParams.searchParams.get('redirect');
+        if (redirect) {
+            urlParams.searchParams.delete('redirect');
+            window.history.replaceState(null, 'redirect', urlParams.href);
+        } else {
+            const {routerData} = this.props;
+            const authorizedPath = Object.keys(routerData).find(
+                item => check(routerData[item].authority, item) && item !== '/'
+            );
+            return authorizedPath;
+        }
+        return redirect;
     };
+
     handleMenuCollapse = collapsed => {
         const {dispatch} = this.props;
         dispatch({
@@ -82,7 +149,6 @@ export default class BasicLayout extends PureComponent {
     };
 
     render() {
-
         const {
             currentUser,
             collapsed,
@@ -93,15 +159,15 @@ export default class BasicLayout extends PureComponent {
             location,
         } = this.props;
 
-        const {isMobile: mb} = this.state;
+        const baseRedirect = this.getBaseRedirect();
         const layout = (
             <Layout>
                 <SiderMenu
                     logo={logo}
+                    Authorized={Authorized}
                     menuData={getMenuData()}
                     collapsed={collapsed}
                     location={location}
-                    isMobile={mb}
                     onCollapse={this.handleMenuCollapse}
                 />
                 <Layout>
@@ -112,13 +178,25 @@ export default class BasicLayout extends PureComponent {
                             fetchingNotices={fetchingNotices}
                             notices={notices}
                             collapsed={collapsed}
-                            isMobile={mb}
                             onCollapse={this.handleMenuCollapse}
                         />
                     </Header>
                     <Content style={{margin: '24px 24px 0', height: '100%'}}>
                         <Switch>
-
+                            {redirectData.map(item => (
+                                <Redirect key={item.from} exact from={item.from} to={item.to}/>
+                            ))}
+                            {getRoutes(match.path, routerData).map(item => (
+                                <AuthorizedRoute
+                                    key={item.key}
+                                    path={item.path}
+                                    component={item.component}
+                                    exact={item.exact}
+                                    authority={item.authority}
+                                    redirectPath="/exception/403"
+                                />
+                            ))}
+                            <Redirect exact from="/" to={baseRedirect}/>
                         </Switch>
                     </Content>
                 </Layout>

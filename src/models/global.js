@@ -18,5 +18,14 @@ export default {
                 collapsed: payload,
             };
         }
-    }
+    },
+    subscriptions: {
+        setup({ history }) {
+            return history.listen(({ pathname, search }) => {
+                if (typeof window.ga !== 'undefined') {
+                    window.ga('send', 'pageview', pathname + search);
+                }
+            });
+        },
+    },
 }
